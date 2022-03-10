@@ -13,11 +13,13 @@ public class LogReader {
         File dir = new File("C://logs");
         File[] files = dir.listFiles();
         if (files != null) {
-            System.out.println("In lastModified descending order : \n");
-            Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
-            LogReader.printFileOrder(files);
-        } else {
-            System.out.println("Dir is empty");
+            if (files.length <= 0) {
+                System.out.println("Dir is empty");
+            } else {
+                System.out.println("In lastModified descending order : \n");
+                Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
+                LogReader.printFileOrder(files);
+            }
         }
     }
 
@@ -77,7 +79,6 @@ public class LogReader {
             }
             logsDate.sort(Comparator.naturalOrder());
             HashSet<String> hashSet = new HashSet<>(uniqueLibrary);
-            //for (String s : hashSet) System.out.println(s);
             String timeBetween = LogReader.daysBetweenLogs(logsDate.get(0), logsDate.get(logsDate.size() - 1));
             float dif = ((((float) (numberOfEROR + numberOfFATAL))) / (numberOfDEBUG + numberOfEROR + numberOfFATAL + numberOfINFO + numberOfWARN)) * 100;
             System.out.println(timeBetween);
