@@ -19,16 +19,16 @@ public class LogReader {
             } else {
                 System.out.println("Files in lastModified descending order : \n");
                 Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
-                LogReader.printFileOrder(files);
+                LogReader.printFilesInformation(files);
             }
         }
     }
 
-    private static void printFileOrder(File[] files) throws IOException {
+    private static void printFilesInformation(File[] files) throws IOException {
         Scanner scanner;
         LogsName logsName = new LogsName();
         DecimalFormat decimalFormat = new DecimalFormat("#.##");
-        long start = 0;
+        long start = 0, end;
         for (File file : files) {
             ArrayList<String> lines = new ArrayList<>();
             ArrayList<String> logsDate = new ArrayList<>();
@@ -42,7 +42,7 @@ public class LogReader {
                 input = scanner.nextLine();
                 lines.add(input);
             }
-            long end = System.nanoTime();
+            end = System.nanoTime();
             for (String s : logsName.listOfLogs) {
                 map.put(s, lines
                         .stream()
