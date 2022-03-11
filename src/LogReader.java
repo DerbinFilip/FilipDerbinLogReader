@@ -1,5 +1,6 @@
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -16,7 +17,7 @@ public class LogReader {
             if (files.length <= 0) {
                 System.out.println("Dir is empty");
             } else {
-                System.out.println("In lastModified descending order : \n");
+                System.out.println("Files in lastModified descending order : \n");
                 Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
                 LogReader.printFileOrder(files);
             }
@@ -25,12 +26,14 @@ public class LogReader {
 
     private static void printFileOrder(File[] files) throws IOException {
         Scanner scanner;
+        LogsName logsName = new LogsName();
+        DecimalFormat decimalFormat = new DecimalFormat("#.##");
         long start = 0;
         for (File file : files) {
             ArrayList<String> lines = new ArrayList<>();
             ArrayList<String> logsDate = new ArrayList<>();
             ArrayList<String> uniqueLibrary = new ArrayList<>();
-            int numberOfWARN, numberOfINFO, numberOfEROR, numberOfFATAL, numberOfDEBUG;
+            Map<String, List<String>> map = new HashMap<>();
             System.out.printf("\n%2$td/%2$tm/%2$tY - %s%n", file.getName(), file.lastModified());
             scanner = new Scanner(file);
             String input;
@@ -40,32 +43,19 @@ public class LogReader {
                 lines.add(input);
             }
             long end = System.nanoTime();
-            List<String> listOfInfos = lines
-                    .stream()
-                    .filter(c -> c.contains("INFO"))
-                    .collect(Collectors.toList());
-            numberOfINFO = listOfInfos.size();
-            List<String> listOfDebugs = lines
-                    .stream()
-                    .filter(c -> c.contains("DEBUG"))
-                    .collect(Collectors.toList());
-            numberOfDEBUG = listOfDebugs.size();
-            List<String> listOfFatales = lines
-                    .stream()
-                    .filter(c -> c.contains("FATAL"))
-                    .collect(Collectors.toList());
-            numberOfFATAL = listOfFatales.size();
-            List<String> listOfWarns = lines
-                    .stream()
-                    .filter(c -> c.contains("WARN"))
-                    .collect(Collectors.toList());
-            numberOfWARN = listOfWarns.size();
-            List<String> listOfErrors = lines
-                    .stream()
-                    .filter(c -> c.contains("ERROR"))
-                    .collect(Collectors.toList());
-            numberOfEROR = listOfErrors.size();
-            System.out.println("Time in nano seconds to read file: " + (end - start));
+            for (String s : logsName.listOfLogs) {
+                map.put(s, lines
+                        .stream()
+                        .filter(c -> c.contains(s))
+                        .collect(Collectors.toList()));
+            }
+
+            logsName.setNumberOfINFO(map.get(logsName.getInfoLog()).size());
+            logsName.setNumberOfDEBUG(map.get(logsName.getDebugLog()).size());
+            logsName.setNumberOfFATAL(map.get(logsName.getFatalLog()).size());
+            logsName.setNumberOfWARN(map.get(logsName.getWarnLog()).size());
+            logsName.setNumberOfEROR(map.get(logsName.getErrorLog()).size());
+
             for (String line : lines) {
                 if (!Objects.equals(line, "")) {
                     if (line.matches("^[0-9].*")) {
@@ -78,18 +68,23 @@ public class LogReader {
                 }
             }
             logsDate.sort(Comparator.naturalOrder());
+
             HashSet<String> hashSet = new HashSet<>(uniqueLibrary);
+
             String timeBetween = LogReader.daysBetweenLogs(logsDate.get(0), logsDate.get(logsDate.size() - 1));
-            float dif = ((((float) (numberOfEROR + numberOfFATAL))) / (numberOfDEBUG + numberOfEROR + numberOfFATAL + numberOfINFO + numberOfWARN)) * 100;
-            System.out.println(timeBetween);
-            System.out.println(
-                    "Numbers of INFO severity logs: " + numberOfINFO + "\n" +
-                            "Numbers of DEBUG severity logs: " + numberOfDEBUG + "\n" +
-                            "Numbers of FATAL severity logs: " + numberOfFATAL + "\n" +
-                            "Numbers of WARN severity logs: " + numberOfWARN + "\n" +
-                            "Numbers of ERROR severity logs: " + numberOfEROR + "\n" +
-                            "Numbers of used unique library: " + hashSet.size());
-            System.out.printf("Ratio of the number of logs with severity ERROR or higher to all logs: %.2f\n", dif);
+
+            float dif = ((((float) (logsName.getNumberOfEROR() + logsName.getNumberOfFATAL())))
+                    / (logsName.getNumberOfDEBUG() + logsName.getNumberOfEROR() + logsName.getNumberOfFATAL() +
+                    logsName.getNumberOfINFO() + logsName.getNumberOfWARN())) * 100;
+
+            System.out.println("Time in nano seconds to read file: " + (end - start) + "\n" + timeBetween +
+                    "\nNumbers of used unique library: " + hashSet.size() +
+                    "\nRatio of the number of logs with severity ERROR or higher to all logs: " + decimalFormat.format(dif));
+
+            for (Map.Entry<String, List<String>> entry : map.entrySet()) {
+                System.out.println(
+                        "Numbers of " + entry.getKey() + " : " + entry.getValue().size());
+            }
         }
     }
 
